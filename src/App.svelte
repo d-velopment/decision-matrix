@@ -49,9 +49,12 @@
       const tilt = 0;
       return `transform:translateY(${lift}px) rotate(${tilt}deg)`;
     }
-    const mouthWidth = 1.14 - intensity * 0.0014;
-    const mouthRotation = (intensity / 100 - 1) * 7;
-    return `transform:scaleX(${mouthWidth}) rotate(${mouthRotation}deg)`;
+    const progress = intensity / 100;
+    const mouthWidth = 1.2 - 0.2 * progress;
+    const mouthRotation = -3 * (1 - progress);
+    const skewX = 9 * (1 - progress);
+    const skewY = -10 * (1 - progress);
+    return `transform:scaleX(${mouthWidth}) rotate(${mouthRotation}deg) skew(${skewX}deg, ${skewY}deg)`;
   }
   function extractMentioned() { clearTimeout(extractionTimer); addMentionedOptions(state, extractOptions(state.description)); }
   function descriptionChanged(event) {
