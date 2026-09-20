@@ -1,7 +1,7 @@
 # Implementation progress
 
 ## Current state
-- Current revision: automatic option extraction and radial controls. The user clarified that the importance slider stays on the evaluation screen, above two separate red/green joysticks. Preparation has no sliders; new pair importance is 50.
+- Current revision: sketch-led multi-page flow with a guide character, automatic option extraction, and radial controls. Options, Personal criteria, Weigh it up, and Results are separate pages; the importance slider stays on the evaluation screen above two separate red/green joysticks. Preparation has no sliders; new pair importance is 50.
 - Implemented radial geometry, dragging labels, keyboard/touch interaction, non-destructive old-state migration, and duplicate/deletion/rename protection for auto-extracted options.
 - Latest change: final metric columns and podium now use independent outward-rounded bounds. Each column expands its minimum downward and maximum upward to whole 100-percentage-point steps, then maps into 0–100%; constant finite columns show 50%; undefined values stay dashes. Raw Excel formulas remain intact.
 - The interrupted previous run had a pending blur/click fix: delayed extraction by 150ms on blur so new option rows do not swallow the user's Add pair click. The fix and regression test are saved.

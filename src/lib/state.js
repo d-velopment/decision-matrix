@@ -10,7 +10,7 @@ export const pairKey = pair => `${key(pair.negativeLabel)}|${key(pair.positiveLa
 export function createState() {
   return { schemaVersion: 1, id: id(), description: '', messages: [], options: [], pairs: [],
     suggestions: { options: [], pairs: [] }, dismissed: { options: [], pairs: [] }, recognizedOptions: [],
-    currentStep: 'prepare', currentPairId: null, inputRevision: 0, lastCalculatedRevision: null };
+    currentStep: 'prepare', preparePage: 'mind', currentPairId: null, inputRevision: 0, lastCalculatedRevision: null };
 }
 export function touch(state) { state.inputRevision++; }
 export function addOption(state, label = '') {
@@ -102,7 +102,7 @@ export function isValidState(state) {
     if (new Set(state.pairs.map(pair => pair.id)).size !== state.pairs.length) return false;
     if (!state.pairs.every(pair => text(pair.id, 100) && text(pair.negativeLabel, 160) && text(pair.positiveLabel, 160) && raw(pair.importanceRaw) && validControls(pair.controls, state.options) &&
       state.options.every(option => raw(pair.ratingsByOptionId[option.id].negativeRaw) && raw(pair.ratingsByOptionId[option.id].positiveRaw)))) return false;
-    if (!['prepare', 'evaluate', 'results'].includes(state.currentStep) || !Number.isInteger(state.inputRevision) || state.inputRevision < 0) return false;
+    if (!['prepare', 'evaluate', 'results'].includes(state.currentStep) || !['mind', 'options', 'criteria'].includes(state.preparePage ?? 'mind') || !Number.isInteger(state.inputRevision) || state.inputRevision < 0) return false;
     if (state.lastCalculatedRevision !== null && !Number.isInteger(state.lastCalculatedRevision)) return false;
     if (!Array.isArray(state.messages) || state.messages.length > 100 || !state.messages.every(message => ['user', 'assistant'].includes(message.role) && text(message.content, 6000))) return false;
     if (!Array.isArray(state.suggestions.options) || state.suggestions.options.length > MAX_OPTIONS || !state.suggestions.options.every(label => text(label, 160))) return false;
@@ -116,6 +116,7 @@ export function loadState(storage) {
     const parsed = JSON.parse(storage.getItem(STORAGE_KEY));
     if (isValidState(parsed)) {
       parsed.recognizedOptions ??= [];
+      parsed.preparePage ??= parsed.description.trim() ? 'options' : 'mind';
       for (const pair of parsed.pairs) ensureControls(pair, parsed.options);
       if (!parsed.pairs.some(pair => pair.id === parsed.currentPairId)) parsed.currentPairId = parsed.pairs[0]?.id ?? null;
       if (!canCalculate(parsed) || (parsed.currentStep === 'results' && parsed.inputRevision !== parsed.lastCalculatedRevision)) parsed.currentStep = 'prepare';

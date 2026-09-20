@@ -2,10 +2,12 @@ import { test, expect } from '@playwright/test';
 
 async function manualDecision(page) {
   await page.goto('/');
+  await page.getByRole('button', { name: /Options/ }).click();
   await page.getByRole('button', { name: 'Add option', exact: true }).click();
   await page.getByRole('textbox', { name: 'Option 1', exact: true }).fill('Stay');
   await page.getByRole('button', { name: 'Add option', exact: true }).click();
   await page.getByRole('textbox', { name: 'Option 2', exact: true }).fill('Move');
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Add pair', exact: true }).click();
   await page.getByRole('textbox', { name: 'Negative state 1' }).fill('Tension');
   await page.getByRole('textbox', { name: 'Positive state 1' }).fill('Calm');
@@ -72,20 +74,25 @@ test('table columns and podium stay between zero and one hundred after a nonunif
 test('demo suggestions in user language require acceptance and preserve edits', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('Я хочу переехать в другой город и сравнить варианты.');
-  await page.getByRole('button', { name: 'Explore with AI' }).click();
+  await page.getByRole('button', { name: 'Let’s begin' }).click();
   await expect(page.getByRole('region', { name: 'Suggestions', exact: true })).toContainText('Душевное напряжение');
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveCount(0);
   await page.getByRole('button', { name: 'Add all options', exact: true }).click();
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Add all pairs', exact: true }).click();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('Остаться на месте');
   await page.getByRole('textbox', { name: 'Option 1', exact: true }).fill('My own option');
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Weigh my options' }).click();
   await setSlider(page.getByRole('slider', { name: 'Importance of this pair' }), 15);
   await page.getByRole('button', { name: 'Edit options & pairs' }).click();
   await page.getByRole('button', { name: 'Suggest more', exact: true }).click();
   await expect(page.getByRole('region', { name: 'Suggestions', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('My own option');
   await expect(page.getByRole('slider')).toHaveCount(0);
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Weigh my options' }).click();
   await page.getByRole('button', { name: 'Next pair' }).click();
   await page.getByRole('button', { name: 'Previous', exact: true }).click();
@@ -96,9 +103,11 @@ test('AI failure is quiet and manual controls remain available', async ({ page }
   await page.route('**/api/suggest', route => route.fulfill({ status: 503, json: {} }));
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('I need to compare a few possibilities.');
-  await page.getByRole('button', { name: 'Explore with AI' }).click();
-  await expect(page.getByRole('button', { name: 'Explore with AI' })).toBeEnabled();
+  await page.getByRole('button', { name: 'Let’s begin' }).click();
+  await expect(page.getByRole('button', { name: 'Let’s begin' })).toBeEnabled();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('button', { name: 'Add option', exact: true })).toBeEnabled();
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await expect(page.getByRole('button', { name: 'Add pair', exact: true })).toBeEnabled();
   await expect(page.getByRole('alert')).toHaveCount(0);
   await expect(page.getByText(/error|failed/i)).toHaveCount(0);
@@ -112,7 +121,7 @@ test('pending AI request cannot revive a reset decision', async ({ page }) => {
   });
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('An old decision I will discard.');
-  await page.getByRole('button', { name: 'Explore with AI' }).click();
+  await page.getByRole('button', { name: 'Let’s begin' }).click();
   await expect.poll(() => Boolean(respond)).toBeTruthy();
   await page.getByRole('button', { name: 'Start over', exact: true }).click();
   await page.getByRole('dialog').getByRole('button', { name: 'Start over', exact: true }).click();
@@ -141,11 +150,14 @@ test('mobile layout fits and importance/joysticks support keyboard input', async
 test('explicit alternatives appear immediately without AI and deleted options stay deleted', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('Выбираю между Москвой, Таллином и Лондоном.');
+  await page.getByRole('button', { name: /Options/ }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('Москвой');
   await expect(page.getByRole('textbox', { name: 'Option 3', exact: true })).toHaveValue('Лондоном');
   await page.getByRole('button', { name: 'Remove option 2', exact: true }).click();
+  await page.getByRole('button', { name: /Back to What’s on your mind/ }).click();
   await page.getByRole('textbox', { name: 'Describe your decision' }).focus();
   await page.getByRole('textbox', { name: 'Describe your decision' }).blur();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 3', exact: true })).toHaveCount(0);
   await expect(page.getByRole('textbox', { name: 'Option 2', exact: true })).toHaveValue('Лондоном');
 });
@@ -153,8 +165,11 @@ test('explicit alternatives appear immediately without AI and deleted options st
 test('automatic extraction does not swallow the click on Add pair when leaving the description', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('I am choosing between London, Tallinn and Riga.');
+  await page.getByRole('button', { name: /Options/ }).click();
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Add pair', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Negative state 1', exact: true })).toBeVisible();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 3', exact: true })).toHaveValue('Riga');
 });
 
@@ -166,13 +181,15 @@ test('AI-mentioned alternatives are added directly while invented ideas remain s
   } }));
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('London appeals to me. Riga feels familiar. I am torn.');
-  await page.getByRole('button', { name: 'Explore with AI' }).click();
+  await page.getByRole('button', { name: 'Let’s begin' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('London');
   await expect(page.getByRole('textbox', { name: 'Option 2', exact: true })).toHaveValue('Riga');
   await expect(page.getByRole('textbox', { name: 'Option 3', exact: true })).toHaveCount(0);
   await expect(page.getByRole('region', { name: 'Suggestions', exact: true })).toContainText('Tallinn');
   await page.getByRole('textbox', { name: 'Option 1', exact: true }).fill('Berlin');
-  await page.getByRole('button', { name: 'Explore with AI' }).click();
+  await page.getByRole('button', { name: /Back to What’s on your mind/ }).click();
+  await page.getByRole('button', { name: 'Let’s begin' }).click();
+  await page.getByRole('button', { name: '01 Options' }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('Berlin');
   await expect(page.getByRole('textbox', { name: 'Option 3', exact: true })).toHaveCount(0);
 });
@@ -205,10 +222,12 @@ test('dragging joysticks and ring labels changes distances and persists independ
 test('six options fit on mobile and touch can move the positive joystick', async ({ page, context }) => {
   await page.setViewportSize({ width: 390, height: 844 });
   await manualDecision(page);
+  await page.getByRole('button', { name: '01 Options' }).click();
   for (let index = 3; index <= 6; index++) {
     await page.getByRole('button', { name: 'Add option', exact: true }).click();
     await page.getByRole('textbox', { name: `Option ${index}`, exact: true }).fill(`Alternative ${index}`);
   }
+  await page.getByRole('button', { name: '02 Personal criteria' }).click();
   await page.getByRole('button', { name: 'Weigh my options' }).click();
   const puck = page.getByRole('button', { name: 'Move preference for Calm', exact: true });
   await puck.scrollIntoViewIfNeeded();

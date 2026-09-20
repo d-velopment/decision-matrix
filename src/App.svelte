@@ -3,6 +3,7 @@
   import Icon from './components/Icon.svelte';
   import Slider from './components/Slider.svelte';
   import Joystick from './components/Joystick.svelte';
+  import Guide from './components/Guide.svelte';
   import { moveControl, moveOption } from './lib/radial.js';
   import { extractOptions } from './lib/extract-options.js';
   import Results from './components/Results.svelte';
@@ -14,7 +15,10 @@
   let state = $state(loadState(storage));
   let provider = $state('demo');
   let busy = $state(false);
+  let aiContextReady = $state(false);
   let reply = $state('');
+  let gazeX = $state(0);
+  let gazeY = $state(0);
   let dialog;
   let controller;
   let requestNumber = 0;
@@ -29,10 +33,26 @@
   $effect(() => { saveAvailable = saveState(storage, state); });
   onMount(() => {
     fetch('/api/config').then(r => r.json()).then(config => { provider = config.provider; }).catch(() => {});
-    return () => { controller?.abort(); clearTimeout(extractionTimer); };
+    const trackGaze = event => {
+      gazeX = Math.max(-2.5, Math.min(2.5, (event.clientX / window.innerWidth - 0.5) * 5));
+      gazeY = Math.max(-2, Math.min(2, (event.clientY / window.innerHeight - 0.42) * 4));
+    };
+    window.addEventListener('pointermove', trackGaze, { passive: true });
+    return () => { controller?.abort(); clearTimeout(extractionTimer); window.removeEventListener('pointermove', trackGaze); };
   });
 
   function changed() { touch(state); }
+  function facePartStyle(part) {
+    const intensity = Math.max(0, Math.min(100, currentPair?.importanceRaw ?? 50));
+    if (part === 'brows') {
+      const lift = intensity * 0.05 - 2.5;
+      const tilt = 0;
+      return `transform:translateY(${lift}px) rotate(${tilt}deg)`;
+    }
+    const mouthWidth = 1.14 - intensity * 0.0014;
+    const mouthRotation = (intensity / 100 - 1) * 7;
+    return `transform:scaleX(${mouthWidth}) rotate(${mouthRotation}deg)`;
+  }
   function extractMentioned() { clearTimeout(extractionTimer); addMentionedOptions(state, extractOptions(state.description)); }
   function descriptionChanged(event) {
     state.description = event.currentTarget.value;
@@ -50,8 +70,17 @@
     state.currentStep = step;
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
+  function setPreparePage(page) {
+    state.currentStep = 'prepare';
+    state.preparePage = page;
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }
   function navigatePair(offset) {
     state.currentPairId = state.pairs[(pairIndex + offset + state.pairs.length) % state.pairs.length].id;
+    requestAnimationFrame(() => {
+      const target = window.matchMedia('(max-width: 740px)').matches ? '.evaluation-layout' : '.evaluation-heading';
+      document.querySelector(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   }
   async function addManualOption() {
     const option = addOption(state);
@@ -114,6 +143,7 @@
         addMentionedOptions(state, grounded.map(item => item.label));
       }
       mergeSuggestions(state, data, decisionId);
+      aiContextReady = Boolean(state.options.length || state.suggestions.options.length);
       if (typeof data.message === 'string' && data.message) state.messages.push({ role: 'assistant', content: data.message });
       state.messages = state.messages.slice(-100);
     } catch { /* Intentionally quiet: manual editing is always available. */ }
@@ -121,7 +151,7 @@
   }
   function reset() {
     clearTimeout(extractionTimer);
-    controller?.abort(); requestNumber++; busy = false; reply = '';
+    controller?.abort(); requestNumber++; busy = false; reply = ''; aiContextReady = false;
     state = createState(); dialog.close();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -129,31 +159,58 @@
 
 <svelte:head><title>Decision Matrix — {state.currentStep === 'results' ? 'Your way forward' : 'A little clarity'}</title></svelte:head>
 
-<div class="app-shell">
+{#snippet navigation()}
+  <nav class="step-nav" aria-label="Decision steps">
+    {#each [['home', 'Home'], ['options', 'Options'], ['criteria', 'Personal criteria'], ['evaluate', 'Weigh it up'], ['results', 'Results']] as [step, label], index}
+      {@const active = step === 'home' ? state.currentStep === 'prepare' && state.preparePage === 'mind' : step === 'evaluate' || step === 'results' ? state.currentStep === step : state.currentStep === 'prepare' && state.preparePage === step}
+      <button class:active={active} aria-current={active ? 'step' : undefined} disabled={(step === 'evaluate' || step === 'results') && !ready} onclick={() => step === 'home' || step === 'options' || step === 'criteria' ? setPreparePage(step === 'home' ? 'mind' : step) : setStep(step)}><span class="step-number">{step === 'home' ? '⌂' : `0${index}`}</span>{label}</button>
+      {#if index < 4}<span class="step-line"></span>{/if}
+    {/each}
+  </nav>
+{/snippet}
+
+<div class="app-shell" class:welcome={state.currentStep === 'prepare' && state.preparePage === 'mind'} class:prepare-inner={state.currentStep === 'prepare' && state.preparePage !== 'mind'}>
   <header class="site-header">
     <a class="brand" href="/" aria-label="Decision Matrix home"><img src="/favicon.svg" alt="" width="36" height="36" /><span>decision<span class="brand-light">matrix</span></span></a>
     <div class="header-right"><span class="save-state"><span class="tiny-dot"></span>{saveAvailable ? 'Saved on this device' : 'This session only'}</span><button class="text-button reset" onclick={() => dialog.showModal()}><Icon name="reset" size={16} /><span>Start over</span></button></div>
   </header>
 
-  <nav class="step-nav" aria-label="Decision steps">
-    {#each [['prepare', 'Make space'], ['evaluate', 'Weigh it up'], ['results', 'Find clarity']] as [step, label], index}
-      <button class:active={state.currentStep === step} aria-current={state.currentStep === step ? 'step' : undefined} disabled={step !== 'prepare' && !ready} onclick={() => setStep(step)}><span class="step-number">0{index + 1}</span>{label}</button>
-      {#if index < 2}<span class="step-line"></span>{/if}
-    {/each}
-  </nav>
+  {#if state.currentStep !== 'prepare' || state.preparePage !== 'mind'}{@render navigation()}{/if}
 
   <main>
     {#if state.currentStep === 'prepare'}
-      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> BIG DECISIONS. YOUR OWN PERSPECTIVE.</div><h1>A little clarity.<br /><em>A way forward.</em></h1></div><p>Start with AI in <em>What’s on your mind?</em><br class="desktop" /> Then lay out your options and make room for what matters.</p></div>
+      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> BIG DECISIONS. YOUR OWN PERSPECTIVE.</div><h1>A little clarity.<br /><em>A way forward.</em></h1></div><div class="page-heading-copy">{#if state.preparePage !== 'mind'}<button class="text-button" onclick={() => setPreparePage('mind')}><Icon name="back" size={16} />Back to What’s on your mind</button>{/if}<p>Start with AI in <em>What’s on your mind?</em><br class="desktop" /> Then lay out your options and make room for what matters.</p></div></div>
 
-      <div class="prepare-layout">
-        <aside class="situation-panel">
+      <div class="prepare-layout prepare-{state.preparePage}">
+        {#if state.preparePage === 'mind'}
+          <div class="welcome-layers" aria-hidden="true">
+            <img class="welcome-layer layer-background" src="/guide/layers/background.png" alt="" />
+            <img class="welcome-layer layer-character" src="/guide/layers/character.png" alt="" />
+            <img class="welcome-layer layer-table" src="/guide/layers/table.png" alt="" />
+            <img class="welcome-layer layer-books-right" src="/guide/layers/books-right.png" alt="" />
+          </div>
+          <p class="scene-slogan scene-slogan-top">Thoughtful<br />choices for<br />a more you.</p>
+          <p class="scene-slogan scene-slogan-bottom">A clearer<br />tomorrow<br />starts with a<br />calm today.</p>
+        {/if}
+        {#if state.preparePage === 'options'}
+          <div class="options-illustration" aria-hidden="true">
+            <img class="options-layer options-table" src="/guide/layers/table.png" alt="" />
+            <img class="options-layer options-character" src="/guide/layers/character-options.png" alt="" />
+          </div>
+        {/if}
+        {#if state.preparePage === 'criteria'}
+          <div class="options-illustration criteria-illustration" aria-hidden="true">
+            <img class="options-layer options-table" src="/guide/layers/table.png" alt="" />
+            <img class="options-layer options-character" src="/guide/layers/character-criteria.png" alt="" />
+          </div>
+        {/if}
+        <aside class:situation-hidden={state.preparePage !== 'mind'} class="situation-panel">
           <div class="section-label"><span class="section-number">01</span> THE DECISION</div>
-          <h2>What’s on your mind?</h2><p class="muted">Describe the area of life, the decision you’re facing, and the options you’re considering.</p>
+          <h2>What’s on your mind?</h2><p class="welcome-reassurance">I’ll help you take this one step at a time.</p><p class="muted">Describe the area of life, the decision you’re facing, and the options you’re considering.</p>
           <label class="sr-only" for="description">Describe your decision</label>
           <textarea id="description" maxlength="6000" rows="6" placeholder="I’m trying to decide whether to…" value={state.description} oninput={descriptionChanged} onblur={descriptionBlurred}></textarea>
           <p class="description-hint">Options you mention appear in your list automatically.</p>
-          <button class="button primary full" disabled={busy || !state.description.trim()} onclick={() => suggest(state.options.length || state.pairs.length ? 'more' : 'initial')}><Icon name="spark" />{busy ? 'Thinking…' : 'Explore with AI'}{#if !busy}<Icon name="arrow" size={18} />{/if}</button>
+          <button class="button primary full" disabled={busy || !state.description.trim()} onclick={() => suggest('initial')}>{busy ? 'Thinking…' : 'Let’s begin'}{#if !busy}<Icon name="arrow" size={18} />{/if}</button>
           {#if provider === 'demo'}<p class="demo-note"><span class="demo-dot"></span> Demo mode · sample suggestions, no API calls</p>{:else}<p class="demo-note">Your description is shared with OpenAI for suggestions.</p>{/if}
           {#if state.messages.length}
             <div class="conversation" aria-label="AI conversation" aria-live="polite">
@@ -161,12 +218,15 @@
             </div>
             <form class="reply-form" onsubmit={event => { event.preventDefault(); suggest('reply'); }}><label class="sr-only" for="reply">Reply to assistant</label><textarea id="reply" rows="2" maxlength="6000" placeholder="Add a little more context…" bind:value={reply}></textarea><button class="button secondary full" disabled={busy || !reply.trim()} type="submit">Send reply <Icon name="arrow" size={16} /></button></form>
           {/if}
+          {#if state.preparePage === 'mind' && aiContextReady && (state.options.length || state.suggestions.options.length)}
+            <div class="options-ready"><p>These possibilities are ready to review.</p><button class="button primary full" onclick={() => setPreparePage('options')}>Fill in Options <Icon name="arrow" size={18} /></button></div>
+          {/if}
           <div class="quiet-note"><Icon name="shield" size={20} /><p>Your ratings and results stay in your browser. This space is yours to change.</p></div>
         </aside>
 
         <div class="workspace">
           {#if suggestionCount}<div class="sr-only" role="region" aria-label="Suggestions">{state.suggestions.options.join(' ')} {state.suggestions.pairs.map(pair => `${pair.negativeLabel} ${pair.positiveLabel}`).join(' ')}</div>{/if}
-          <section class="options-section" aria-label="Your options">
+          <section class:hidden-page={state.preparePage !== 'options'} class="options-section" aria-label="Your options">
             <div class="section-header"><div><div class="section-label"><span class="section-number">02</span> THE POSSIBILITIES</div><h2>Your options <span class="count">{state.options.length} / 6</span></h2></div></div>
             <div class="option-list">
               {#each state.options as option, index (option.id)}
@@ -180,9 +240,10 @@
               </div>
             {/if}
             <button class="text-button section-add" onclick={addManualOption} disabled={state.options.length >= 6}><Icon name="plus" size={16} />Add option</button>
+            <div class="page-next"><p>When your options feel complete, move on to what matters.</p><button class="button primary" disabled={state.options.filter(option => option.label.trim()).length < 2} onclick={() => setPreparePage('criteria')}>Personal criteria <Icon name="arrow" /></button></div>
           </section>
 
-          <section aria-label="What matters to you">
+          <section class:hidden-page={state.preparePage !== 'criteria'} aria-label="What matters to you">
             <div class="section-header"><div><div class="section-label"><span class="section-number">03</span> WHAT MATTERS</div><h2>Make it personal <span class="count">{state.pairs.length} / 30</span></h2></div></div>
             <p class="section-description">Two sides of an experience. Keep the pairs that feel relevant.</p>
             <div class="pair-list">
@@ -200,14 +261,14 @@
               </div>
             {/if}
             <button class="text-button section-add" onclick={addManualPair} disabled={state.pairs.length >= 30}><Icon name="plus" size={16} />Add pair</button>
+            <div class="page-next"><p>Next, we’ll compare how each experience feels for every option.</p><button class="button primary" aria-label="Weigh my options" disabled={!ready} onclick={() => setStep('evaluate')}>Weigh it up <Icon name="arrow" /></button></div>
           </section>
 
-          {#if state.options.length || state.pairs.length}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}
-          <div class="continue-bar"><p>{ready ? 'Everything is yours to adjust along the way.' : 'Add at least 2 named options and 1 complete pair.'}</p><button class="button primary" disabled={!ready} onclick={() => setStep('evaluate')}>Weigh my options <Icon name="arrow" /></button></div>
+          {#if state.preparePage !== 'mind' && (state.options.length || state.pairs.length)}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}
         </div>
       </div>
     {:else if state.currentStep === 'evaluate' && currentPair}
-      <div class="evaluation-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> ONE EXPERIENCE AT A TIME</div><h1>How does it feel?</h1><p class="muted">Move each center toward the options you associate with that feeling.</p></div><button class="text-button" onclick={() => setStep('prepare')}><Icon name="back" size={16} />Edit options & pairs</button></div>
+      <div class="evaluation-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> ONE EXPERIENCE AT A TIME</div><h1>How does it feel?</h1><p class="muted">Move each center toward the options you associate with that feeling.</p></div><div class="evaluation-portrait" aria-label="Your perspective changes with importance"><img class="evaluation-character" src="/guide/layers/evaluation-character-base.png" alt="" /><img class="evaluation-feature evaluation-nose" src="/guide/layers/evaluation-nose.png" alt="" /><div class="evaluation-face-overlay"><img class="evaluation-feature evaluation-eye-lids" src="/guide/layers/evaluation-eye-lids.png" alt="" /><img class="evaluation-feature evaluation-brows" style={facePartStyle('brows')} src="/guide/layers/evaluation-brows.png" alt="" /><img class="evaluation-feature evaluation-mouth" style={facePartStyle('mouth')} src="/guide/layers/evaluation-mouth.png" alt="" /><div class="portrait-gaze" style={`--gaze-x:${gazeX}px;--gaze-y:${gazeY}px`} aria-hidden="true"><span></span><span></span></div></div></div></div>
       <div class="evaluation-layout">
         <aside class="pair-navigation"><div class="section-label">YOUR PAIRS <span class="count">{state.pairs.length}</span></div>{#each state.pairs as pair, index (pair.id)}<button class:chosen={pair.id === state.currentPairId} aria-current={pair.id === state.currentPairId ? 'step' : undefined} onclick={() => { state.currentPairId = pair.id; }}><span>{String(index + 1).padStart(2, '0')}</span><span dir="auto">{pair.positiveLabel}</span>{#if pair.id === state.currentPairId}<Icon name="arrow" size={15} />{/if}</button>{/each}</aside>
         <section class="evaluation-card">
@@ -232,6 +293,7 @@
       <Results {results} onedit={() => setStep('evaluate')} />
     {/if}
   </main>
+  {#if state.currentStep === 'prepare' && state.preparePage === 'mind'}{@render navigation()}{/if}
   <footer class="site-footer"><span>Less noise. More perspective.</span><span>Made for your kind of decision.</span></footer>
 </div>
 

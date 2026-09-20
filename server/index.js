@@ -5,7 +5,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import { demoSuggestions, openAISuggestions, validRequest } from './ai.js';
 
 const distDir = fileURLToPath(new URL('../dist/', import.meta.url));
-const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml' };
+const mime = { '.html': 'text/html', '.js': 'text/javascript', '.css': 'text/css', '.svg': 'image/svg+xml', '.png': 'image/png' };
 function json(res, status, data) { res.writeHead(status, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' }); res.end(JSON.stringify(data)); }
 async function body(req) {
   let size = 0;
@@ -60,7 +60,7 @@ export function createServer(config = {}) {
     }
     const assetPath = url.pathname === '/' ? 'index.html' : url.pathname.slice(1);
     const file = resolve(distDir, assetPath);
-    const permitted = assetPath === 'index.html' || assetPath === 'favicon.svg' || /^assets\/[a-zA-Z0-9_.-]+$/.test(assetPath);
+    const permitted = assetPath === 'index.html' || assetPath === 'favicon.svg' || /^assets\/[a-zA-Z0-9_.-]+$/.test(assetPath) || /^guide\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)?\.png$/.test(assetPath);
     if ((req.method === 'GET' || req.method === 'HEAD') && permitted && file.startsWith(resolve(distDir) + sep)) {
       try {
         const content = await readFile(file);
