@@ -32,8 +32,15 @@ export function createServer(config = {}) {
     try { url = new URL(req.url, 'http://localhost'); } catch { return json(res, 400, {}); }
     if (req.method === 'GET' && url.pathname === '/api/config') return json(res, 200, { provider });
     if (req.method === 'POST' && url.pathname === '/api/suggest') {
-      // Protect the local keyed service from requests initiated by unrelated sites.
-      if (req.headers.origin && req.headers.origin !== `http://${req.headers.host}` && req.headers.origin !== `https://${req.headers.host}`) return json(res, 403, {});
+      // Protect the local keyed service while allowing the Vite dev app on another
+      // loopback port (for example, the browser app on :5173 and API on :3000).
+      if (req.headers.origin) {
+        try {
+          const origin = new URL(req.headers.origin);
+          const isLoopback = ['127.0.0.1', 'localhost', '[::1]', '::1'].includes(origin.hostname);
+          if (!isLoopback || !['http:', 'https:'].includes(origin.protocol)) return json(res, 403, {});
+        } catch { return json(res, 403, {}); }
+      }
       if (req.headers['sec-fetch-site'] === 'cross-site') return json(res, 403, {});
       if (!req.headers['content-type']?.startsWith('application/json')) return json(res, 415, {});
       let payload;

@@ -6,6 +6,7 @@
   import Guide from './components/Guide.svelte';
   import { moveControl, moveOption } from './lib/radial.js';
   import { extractOptions } from './lib/extract-options.js';
+  import { checkInitialRequest } from './lib/check-initial-request.js';
   import Results from './components/Results.svelte';
   import { calculateDecision } from './lib/core.js';
   import { createState, loadState, saveState, touch, addOption, addPair, removeOption, removePair, canCalculate, mergeSuggestions, addMentionedOptions, key, pairKey } from './lib/state.js';
@@ -31,7 +32,9 @@
   let state = $state(loadState(storage));
   let provider = $state('demo');
   let busy = $state(false);
+  let initialRequestHint = $state('');
   let aiContextReady = $state(false);
+  let suggestMoreAvailable = $state({ options: true, pairs: true });
   let typedEyebrow = $state('');
   let typedHeading = $state('');
   let typedHeadingEm = $state('');
@@ -41,6 +44,7 @@
   let dialog;
   let controller;
   let requestNumber = 0;
+  let resultsTypeRun = 0;
   let extractionTimer;
   let saveAvailable = $state(true);
   const ready = $derived(canCalculate(state));
@@ -63,6 +67,28 @@
       value += character; setter(value);
       await wait(28 + Math.random() * 135);
     }
+  }
+  async function typeResultsText() {
+    const run = ++resultsTypeRun;
+    await tick();
+    const nodes = [];
+    for (const root of document.querySelectorAll('.results-view .center-heading-copy, .results-view .podium')) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) {
+        if (node.nodeValue.trim()) nodes.push({ node, text: node.nodeValue, slow: root.classList.contains('podium') });
+      }
+    }
+    nodes.forEach(item => { item.node.nodeValue = ''; });
+    await Promise.all(nodes.map(async item => {
+      await wait(Math.random() * 120);
+      for (const character of item.text) {
+        if (run !== resultsTypeRun) return;
+        item.node.nodeValue += character;
+        const delay = 18 + Math.random() * 62;
+        await wait(item.slow ? delay * 3 : delay);
+      }
+    }));
   }
 
   $effect(() => { saveAvailable = saveState(storage, state); });
@@ -96,6 +122,7 @@
   }
   function extractMentioned() { clearTimeout(extractionTimer); addMentionedOptions(state, extractOptions(state.description)); }
   function descriptionChanged(event) {
+    initialRequestHint = '';
     state.description = event.currentTarget.value;
     changed(); clearTimeout(extractionTimer);
     extractionTimer = setTimeout(extractMentioned, 900);
@@ -108,6 +135,7 @@
   function setStep(step) {
     if (step !== 'prepare' && !ready) return;
     if (step === 'results') state.lastCalculatedRevision = state.inputRevision;
+    if (step === 'results') void typeResultsText(); else resultsTypeRun++;
     state.currentStep = step;
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -121,6 +149,15 @@
     requestAnimationFrame(() => {
       const target = window.matchMedia('(max-width: 740px)').matches ? '.evaluation-layout' : '.evaluation-heading';
       document.querySelector(target)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+  }
+  async function scrollToConversation({ latestAssistant = false } = {}) {
+    await tick();
+    requestAnimationFrame(() => {
+      const target = latestAssistant
+        ? document.querySelector('.conversation .message.assistant:last-of-type')
+        : document.querySelector('.conversation');
+      target?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     });
   }
   async function addManualOption() {
@@ -154,6 +191,11 @@
   }
   async function suggest(intent = 'initial') {
     if (busy) return;
+    if (intent === 'initial') {
+      const assessment = checkInitialRequest(state.description);
+      initialRequestHint = assessment.message ?? '';
+      if (assessment.action === 'clarify') return;
+    }
     if (intent === 'reply' && !reply.trim()) return;
     if (intent === 'reply') { state.messages.push({ role: 'user', content: reply.trim() }); reply = ''; }
     extractMentioned();
@@ -170,6 +212,8 @@
         body: JSON.stringify({ description: state.description, intent,
           options: state.options.map(option => option.label),
           pairs: state.pairs.map(({ negativeLabel, positiveLabel }) => ({ negativeLabel, positiveLabel })),
+          suggestedOptions: state.suggestions.options,
+          suggestedPairs: state.suggestions.pairs.map(({ negativeLabel, positiveLabel }) => ({ negativeLabel, positiveLabel })),
           messages: state.messages.slice(-20),
           dismissed: { options: state.dismissed.options.slice(-100), pairs: state.dismissed.pairs.slice(-100) },
         }),
@@ -183,16 +227,29 @@
         const grounded = data.mentionedOptions.filter(item => item && typeof item.label === 'string' && typeof item.evidence === 'string' && item.evidence.trim() && source.includes(item.evidence.toLocaleLowerCase()));
         addMentionedOptions(state, grounded.map(item => item.label));
       }
+      const optionSuggestionsBefore = state.suggestions.options.length;
+      const pairSuggestionsBefore = state.suggestions.pairs.length;
       mergeSuggestions(state, data, decisionId);
-      aiContextReady = Boolean(state.options.length || state.suggestions.options.length);
+      if (intent === 'more') {
+        suggestMoreAvailable.options = state.suggestions.options.length > optionSuggestionsBefore;
+        suggestMoreAvailable.pairs = state.suggestions.pairs.length > pairSuggestionsBefore;
+      }
       if (typeof data.message === 'string' && data.message) state.messages.push({ role: 'assistant', content: data.message });
+      const hasOptions = Boolean(state.options.length || state.suggestions.options.length);
+      const hasPairs = Boolean(state.pairs.length || state.suggestions.pairs.length);
+      const asksFollowUp = typeof data.message === 'string' && /[?？]/.test(data.message);
+      const hasConfirmation = typeof data.message === 'string' && data.message.trim().length > 0;
+      aiContextReady = hasOptions && hasPairs && !asksFollowUp && hasConfirmation;
       state.messages = state.messages.slice(-100);
+      await scrollToConversation({ latestAssistant: intent !== 'initial' });
     } catch { /* Intentionally quiet: manual editing is always available. */ }
     finally { clearTimeout(timeout); if (number === requestNumber) busy = false; }
   }
   function reset() {
+    initialRequestHint = '';
     clearTimeout(extractionTimer);
     controller?.abort(); requestNumber++; busy = false; reply = ''; aiContextReady = false;
+    suggestMoreAvailable = { options: true, pairs: true };
     state = createState(); dialog.close();
     window.scrollTo({ top: 0, behavior: 'instant' });
   }
@@ -251,16 +308,17 @@
           <label class="sr-only" for="description">Describe your decision</label>
           <textarea id="description" maxlength="6000" rows="6" placeholder="I’m trying to decide whether to…" value={state.description} oninput={descriptionChanged} onblur={descriptionBlurred}></textarea>
           <p class="description-hint">Options you mention appear in your list automatically.</p>
+          {#if initialRequestHint}<p class="initial-request-hint" role="status">{initialRequestHint}</p>{/if}
           <button class="button primary full" disabled={busy || !state.description.trim()} onclick={() => suggest('initial')}>{busy ? 'Thinking…' : 'Let’s begin'}{#if !busy}<Icon name="arrow" size={18} />{/if}</button>
           {#if provider === 'demo'}<p class="demo-note"><span class="demo-dot"></span> Demo mode · sample suggestions, no API calls</p>{:else}<p class="demo-note">Your description is shared with OpenAI for suggestions.</p>{/if}
           {#if state.messages.length}
             <div class="conversation" aria-label="AI conversation" aria-live="polite">
               {#each state.messages as message, index}<div class="message {message.role}"><span>{message.role === 'assistant' ? (provider === 'demo' ? 'SAMPLE ASSISTANT' : 'ASSISTANT') : 'YOU'}</span><p dir="auto">{message.content}</p></div>{/each}
             </div>
-            <form class="reply-form" onsubmit={event => { event.preventDefault(); suggest('reply'); }}><label class="sr-only" for="reply">Reply to assistant</label><textarea id="reply" rows="2" maxlength="6000" placeholder="Add a little more context…" bind:value={reply}></textarea><button class="button secondary full" disabled={busy || !reply.trim()} type="submit">Send reply <Icon name="arrow" size={16} /></button></form>
+            {#if !aiContextReady}<form class="reply-form" onsubmit={event => { event.preventDefault(); suggest('reply'); }}><label class="sr-only" for="reply">Reply to assistant</label><textarea id="reply" rows="2" maxlength="6000" placeholder="Add a little more context…" bind:value={reply}></textarea><button class="button secondary full" disabled={busy || !reply.trim()} type="submit">Send reply <Icon name="arrow" size={16} /></button></form>{/if}
           {/if}
           {#if state.preparePage === 'mind' && aiContextReady && (state.options.length || state.suggestions.options.length)}
-            <div class="options-ready"><p>These possibilities are ready to review.</p><button class="button primary full" onclick={() => setPreparePage('options')}>Fill in Options <Icon name="arrow" size={18} /></button></div>
+            <div class="options-ready"><p>Your options and pairs are ready to review.</p><button class="button primary full" onclick={() => setPreparePage('options')}>Fill in Options <Icon name="arrow" size={18} /></button></div>
           {/if}
           <div class="quiet-note"><Icon name="shield" size={20} /><p>Your ratings and results stay in your browser. This space is yours to change.</p></div>
         </aside>
@@ -280,7 +338,7 @@
                 {#each state.suggestions.options as option}<div class="suggestion-row"><span dir="auto">{option}</span><button class="small-button" disabled={state.options.length >= 6} onclick={() => acceptOption(option)}>Add</button><button class="icon-button" aria-label={`Dismiss ${option}`} onclick={() => dismiss('options', option)}><Icon name="close" size={16} /></button></div>{/each}
               </div>
             {/if}
-            <button class="text-button section-add" onclick={addManualOption} disabled={state.options.length >= 6}><Icon name="plus" size={16} />Add option</button>
+            <div class="section-actions">{#if state.preparePage === 'options' && suggestMoreAvailable.options}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}<button class="text-button section-add" onclick={addManualOption} disabled={state.options.length >= 6}><Icon name="plus" size={16} />Add option</button></div>
             <div class="page-next"><p>When your options feel complete, move on to what matters.</p><button class="button primary" disabled={state.options.filter(option => option.label.trim()).length < 2} onclick={() => setPreparePage('criteria')}>Personal criteria <Icon name="arrow" /></button></div>
           </section>
 
@@ -301,11 +359,10 @@
                 {#each state.suggestions.pairs as pair}<div class="suggestion-row"><span class="suggested-pair" dir="auto">{pair.negativeLabel}<span class="muted"> ↔ </span>{pair.positiveLabel}</span><button class="small-button" disabled={state.pairs.length >= 30} onclick={() => acceptPair(pair)}>Add</button><button class="icon-button" aria-label={`Dismiss ${pair.negativeLabel}`} onclick={() => dismiss('pairs', pair)}><Icon name="close" size={16} /></button></div>{/each}
               </div>
             {/if}
-            <button class="text-button section-add" onclick={addManualPair} disabled={state.pairs.length >= 30}><Icon name="plus" size={16} />Add pair</button>
+            <div class="section-actions">{#if state.preparePage === 'criteria' && suggestMoreAvailable.pairs}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}<button class="text-button section-add" onclick={addManualPair} disabled={state.pairs.length >= 30}><Icon name="plus" size={16} />Add pair</button></div>
             <div class="page-next"><p>Next, we’ll compare how each experience feels for every option.</p><button class="button primary" aria-label="Weigh my options" disabled={!ready} onclick={() => setStep('evaluate')}>Weigh it up <Icon name="arrow" /></button></div>
           </section>
 
-          {#if state.preparePage !== 'mind' && (state.options.length || state.pairs.length)}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}
         </div>
       </div>
     {:else if state.currentStep === 'evaluate' && currentPair}
