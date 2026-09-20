@@ -144,12 +144,12 @@
 
   <main>
     {#if state.currentStep === 'prepare'}
-      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> BIG DECISIONS. YOUR OWN PERSPECTIVE.</div><h1>A little clarity.<br /><em>A way forward.</em></h1></div><p>Lay out your options. Make room for what matters.<br class="desktop" /> See where your own feelings lead you.</p></div>
+      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> BIG DECISIONS. YOUR OWN PERSPECTIVE.</div><h1>A little clarity.<br /><em>A way forward.</em></h1></div><p>Start with AI in <em>What’s on your mind?</em><br class="desktop" /> Then lay out your options and make room for what matters.</p></div>
 
       <div class="prepare-layout">
         <aside class="situation-panel">
           <div class="section-label"><span class="section-number">01</span> THE DECISION</div>
-          <h2>What’s on your mind?</h2><p class="muted">A move, a new direction, or something entirely your own.</p>
+          <h2>What’s on your mind?</h2><p class="muted">Describe the area of life, the decision you’re facing, and the options you’re considering.</p>
           <label class="sr-only" for="description">Describe your decision</label>
           <textarea id="description" maxlength="6000" rows="6" placeholder="I’m trying to decide whether to…" value={state.description} oninput={descriptionChanged} onblur={descriptionBlurred}></textarea>
           <p class="description-hint">Options you mention appear in your list automatically.</p>
