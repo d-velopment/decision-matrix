@@ -50,14 +50,14 @@ MVP includes one locally saved decision, AI-assisted setup, manual editing, an i
 ### C. Results and revision
 
 - Always display the entire podium: places 1, 2, and 3, including empty places.
-- Only options with an unrounded Result >= 0 are eligible.
-- Rank eligible options by Result rounded to a whole percentage point. Use dense ranking: ties share a place and the next distinct score takes the next place, without gaps.
+- Normalize each final metric column independently across all options using min/max scaling to 0–100%.
+- All options with a finite Result are eligible, including those with originally negative results.
+- Rank options by normalized Result rounded to a whole percentage point. Use dense ranking: ties share a place and the next distinct score takes the next place, without gaps.
 - Show up to three distinct ranks. Every option tied at a displayed rank is shown there.
 - Give the first-place option(s) prominent large labels.
 - If no options qualify, show “No options” alongside the empty podium.
-- Add a flame to each option whose unrounded Result is strictly greater than 1 (100%). Exactly 100% does not qualify.
-- Any flame explanation is tied to the user's assessments, for example “Your ratings indicate a strong desire for change.” It is not a diagnosis or an instruction to change their life.
-- An expandable table includes every option, including negative results and options outside the podium, and all seven metrics.
+- No flame is displayed: normalized results never exceed 100%. This supersedes the earlier flame and negative-eligibility rules.
+- An expandable table includes every option, including options outside the podium, and all seven normalized metrics.
 - The table formats numeric results as percentages with two decimal places. Undefined metrics display an em dash.
 - The user can return to any input, edit, and calculate again.
 
@@ -136,22 +136,32 @@ The sum of Balance across options is zero, subject to floating-point precision. 
 - When Calm can be evaluated but Uncertainty is undefined, use Uncertainty's effective value of 0.5 in its formula.
 - Store display validity separately from the effective numeric value; do not show the fallback as an observed score.
 
-For a fully uniform default state, all contributions are zero. Balance, Range, Fear, Interest, and Result are zero; Uncertainty and Calm display em dashes. Every option shares first place. No warning or request to revise inputs is shown.
+For a fully uniform default state, all contributions and finite raw metrics are zero; Uncertainty and Calm are undefined. Final column normalization displays each finite equal-valued metric as 50%, and the undefined metrics as em dashes. Every option shares first place at 50%. No warning or request to revise inputs is shown.
 
 ### 4.4 Display and ranking
 
-Scores use the original Excel scale: a numeric Result of 0.5123 displays as 51.23% in the table and ranks as 51%.
+First compute every raw metric using the original Excel formulas and fallback rules. These raw results remain the reference for Excel parity; never feed display-normalized metrics into downstream formulas.
+
+For each metric column, find its minimum and maximum among finite raw values, ignoring undefined values. Expand the bounds outward to whole 100-percentage-point steps. Since raw metrics are fractions, floor the minimum to an integer and ceil the maximum to an integer:
+
+```
+displayMin = floor(columnMin)
+displayMax = ceil(columnMax)
+display = (raw - displayMin) / (displayMax - displayMin)
+```
+
+The expanded lower bound displays as 0%, the expanded upper bound as 100%, and intermediate values retain their relative position. For example, −278% is normalized against −300%, and 238% against 300%. If the entire finite column is constant (including a single finite value), display 50% for those entries. Undefined entries remain dashes. Do not normalize the fallback 0.5 in place of a displayed dash.
 
 Order of operations:
 
 1. Compute full-precision metrics.
-2. Exclude Result < 0 from podium eligibility.
-3. Determine flame status from Result > 1.
-4. Compute the ranking key as `Math.round(Result * 100)` for eligible options.
+2. Normalize all final metric columns independently, without mutating raw results.
+3. Include every option with a finite normalized Result; no negative filtering and no flame threshold.
+4. Compute the ranking key as `Math.round(normalizedResult * 100)`.
 5. Assign dense ranks to distinct keys in descending order.
 6. Format the table separately to two decimal places.
 
-Do not base thresholds on formatted table values. For example, -0.4% is excluded; 100.4% qualifies for a flame even though its ranking key is 100%.
+Both table and podium use the same normalized values. The table retains two decimal places and the podium uses whole percentages. An originally all-negative set still produces a 0–100% ranking. An equal-valued set ties at 50%.
 
 ## 5. Editing and persistence
 
@@ -252,11 +262,12 @@ Test independently from legacy parity:
 
 ### C. Results and interaction
 
-- Negative results never enter the podium; zero is eligible.
-- All-negative results leave the full podium visible with “No options”.
+- Originally negative results can enter the podium after column normalization.
+- An all-negative raw result set still ranks from 0% to 100%; a constant set ties at 50%.
 - Values rounding to the same whole percent share a rank, and ranks are dense.
 - Only three distinct ranks appear; tied entries are never dropped to fit three individual slots.
-- Flame threshold uses the unrounded result and is strictly above 100%.
+- No displayed result falls outside 0–100%, and no flame is displayed.
+- Every metric column uses its own finite min/max; undefined values stay dashes and source metrics are not mutated.
 - Table includes all options with two decimal places or the appropriate dash.
 - Calculate works with untouched sliders, at least one pair, and 2–6 options.
 - Enforce the 30-pair and 6-option maximums for manual and AI additions.

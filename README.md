@@ -4,6 +4,8 @@ A Svelte 5 app for comparing personal decisions. OpenAI can help suggest options
 
 Explicit alternatives in the description are added to Your options automatically. Preparation shows pair labels only. Evaluation provides a pair-importance slider and two independent draggable circles: negative (red) and positive (green). Move each center toward an option, or drag option labels around the ring. Touch and keyboard arrows work too. All positions are saved locally.
 
+The final table scales each metric column independently between outward-rounded bounds: the lower bound is floored to a whole 100-percentage-point step and the upper bound is ceiled to one. Thus −278% uses −300% and 238% uses 300%. The podium uses the same normalized Result column. Constant columns display 50%, undefined values remain dashes, and all options can rank, including those whose raw results were negative. Flames are no longer shown. The original formulas remain unchanged internally.
+
 Offline option extraction handles common English/Russian lists and choice phrases. The live OpenAI provider can also extract alternatives from freer descriptions when exploring with AI, with supporting source text. New ideas from AI still require acceptance. Removed or renamed options are not re-added by repeated extraction.
 
 ## Run locally
@@ -71,7 +73,7 @@ PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH="/Applications/Google Chrome.app/Contents/Ma
 Browser tests build the app and start a separate demo server on port 3100. Tests never make paid API calls.
 
 - All 28 metrics from the original Excel workbook are checked with a 1e-8 absolute tolerance, bypassing new input processing.
-- Separate tests cover hidden normalization, radial distance scoring, control independence, undefined values, ties, eligibility, flame thresholds, editing, persistence, and input limits.
+- Separate tests cover hidden input normalization, final column normalization, radial distance scoring, control independence, undefined values, ties, editing, persistence, and input limits.
 - Server tests check request validation, private file access, origin checks, and the OpenAI response contract.
 - Browser tests cover the complete manual workflow, multilingual sample suggestions, automatic option extraction, independent joysticks, draggable ring labels, touch/keyboard input, refresh, reset, stale requests, silent failures, and mobile layout.
 

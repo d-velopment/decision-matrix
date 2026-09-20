@@ -3,7 +3,9 @@
 ## Current state
 - Current revision: automatic option extraction and radial controls. The user clarified that the importance slider stays on the evaluation screen, above two separate red/green joysticks. Preparation has no sliders; new pair importance is 50.
 - Implemented radial geometry, dragging labels, keyboard/touch interaction, non-destructive old-state migration, and duplicate/deletion/rename protection for auto-extracted options.
-- Current verification: first run of 21 unit/server tests and 8 browser scenarios passed. A follow-up rename-regression test was added; final run and desktop visual inspection are pending.
+- Latest change: final metric columns and podium now use independent outward-rounded bounds. Each column expands its minimum downward and maximum upward to whole 100-percentage-point steps, then maps into 0–100%; constant finite columns show 50%; undefined values stay dashes. Raw Excel formulas remain intact.
+- The interrupted previous run had a pending blur/click fix: delayed extraction by 150ms on blur so new option rows do not swallow the user's Add pair click. The fix and regression test are saved.
+- Current verification: production build, 24 unit/server tests, and all 11 browser scenarios passed, including outward-rounded normalized output. Desktop joysticks and expanded normalized results were visually inspected; the six-option mobile joystick was inspected in the preceding run. No pending implementation or verification steps remain.
 - First runnable MVP implemented with Svelte 5 + Vite, separate JavaScript calculation/state modules, and a Node.js server.
 - Product contract: SPEC.md. The user requested Svelte 5 after implementation began; this is incorporated.
 - Default mode is a clearly labelled deterministic demo, with no API key or paid requests.
@@ -14,9 +16,9 @@
 ## Plan
 1. Done: extract the 15-pair Excel fixture and verify all 28 metrics.
 2. Done: hidden normalization, zero fallbacks, ranking, state, and localStorage.
-3. Done: preparation, evaluation, podium, expandable table, reset dialog, and independent sliders.
+3. Done: preparation, evaluation with importance and radial controls, normalized podium/table, and reset dialog.
 4. Done: Node.js API, demo provider, and optional OpenAI provider.
-5. Passed: production build; 15 unit/server tests; 5 Playwright browser scenarios.
+5. Passed (latest): production build; 24 unit/server tests; 11 Playwright browser scenarios.
 6. Done: desktop setup/evaluation and mobile evaluation/results visually inspected. Corrected spacing between pair labels and rebuilt successfully without compiler warnings. Mobile content fits a 390px viewport.
 
 ## Remaining work / practical limitations

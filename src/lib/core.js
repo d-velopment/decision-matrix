@@ -42,9 +42,32 @@ export function calculateDecision(state) {
   return calculateNormalized(weights, negatives, positives).map((metrics, index) => ({ ...state.options[index], ...metrics }));
 }
 
+// Display-only min/max scaling. Raw metrics and their downstream calculations stay intact.
+export function normalizeResults(results) {
+  const bounds = Object.fromEntries(METRICS.map(metric => {
+    const values = results.map(option => option[metric]).filter(Number.isFinite);
+    if (!values.length) return [metric, [null, null]];
+    // Bounds are deliberately expanded to whole 100-percentage-point steps.
+    // Raw metrics are fractions, so -2.78 becomes -3.00 (-278% -> -300%)
+    // and 2.38 becomes 3.00 (238% -> 300%).
+    return [metric, [Math.floor(Math.min(...values)), Math.ceil(Math.max(...values))]];
+  }));
+  return results.map(option => {
+    const row = { ...option };
+    for (const metric of METRICS) {
+      const value = option[metric];
+      const [min, max] = bounds[metric];
+      row[metric] = !Number.isFinite(value) ? null : min === null || max === null ? null : min === max ? 0.5
+        : Math.max(0, Math.min(1, (value - min) / (max - min)));
+    }
+    return row;
+  });
+}
+
+// Takes already normalized display results; rank tied whole percentages densely.
 export function podium(results) {
-  const eligible = results.filter(option => option.result >= 0 && Number.isFinite(option.result))
-    .map(option => ({ ...option, score: Math.round(option.result * 100), flame: option.result > 1 }))
+  const eligible = results.filter(option => Number.isFinite(option.result))
+    .map(option => ({ ...option, score: Math.round(option.result * 100) }))
     .sort((a, b) => b.score - a.score);
   const scores = [...new Set(eligible.map(option => option.score))].slice(0, 3);
   return [0, 1, 2].map(index => ({ place: index + 1, options: eligible.filter(option => option.score === scores[index]) }));

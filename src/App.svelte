@@ -71,8 +71,10 @@
     if (!state.pairs.some(item => pairKey(item) === pairKey(pair))) addPair(state, pair.negativeLabel, pair.positiveLabel);
     state.suggestions.pairs = state.suggestions.pairs.filter(item => pairKey(item) !== pairKey(pair));
   }
-  function acceptAll() {
+  function acceptAllOptions() {
     for (const option of [...state.suggestions.options]) acceptOption(option);
+  }
+  function acceptAllPairs() {
     for (const pair of [...state.suggestions.pairs]) acceptPair(pair);
   }
   function dismiss(type, item) {
@@ -163,17 +165,25 @@
         </aside>
 
         <div class="workspace">
+          {#if suggestionCount}<div class="sr-only" role="region" aria-label="Suggestions">{state.suggestions.options.join(' ')} {state.suggestions.pairs.map(pair => `${pair.negativeLabel} ${pair.positiveLabel}`).join(' ')}</div>{/if}
           <section class="options-section" aria-label="Your options">
-            <div class="section-header"><div><div class="section-label"><span class="section-number">02</span> THE POSSIBILITIES</div><h2>Your options <span class="count">{state.options.length} / 6</span></h2></div><button class="text-button" onclick={addManualOption} disabled={state.options.length >= 6}><Icon name="plus" size={16} />Add option</button></div>
+            <div class="section-header"><div><div class="section-label"><span class="section-number">02</span> THE POSSIBILITIES</div><h2>Your options <span class="count">{state.options.length} / 6</span></h2></div></div>
             <div class="option-list">
               {#each state.options as option, index (option.id)}
                 <div class="option-row"><span class="option-letter">{String.fromCharCode(65 + index)}</span><label class="sr-only" for={`option-${option.id}`}>Option {index + 1}</label><input id={`option-${option.id}`} maxlength="160" dir="auto" placeholder="Name this possibility…" bind:value={option.label} oninput={changed} /><button class="icon-button" aria-label={`Remove option ${index + 1}`} onclick={() => removeOption(state, option.id)}><Icon name="close" size={16} /></button></div>
               {:else}<div class="empty-state"><span class="empty-symbol">↗</span><p>A few possibilities.<br /><span>Add your own, or explore with AI.</span></p></div>{/each}
             </div>
+            {#if state.suggestions.options.length}
+              <div class="suggestions suggestions-inline" aria-label="Suggestions">
+                <div class="section-header"><div><div class="eyebrow"><Icon name="spark" size={14} /> KEEP WHAT FEELS RIGHT</div><h3>Options</h3></div><button class="text-button" aria-label="Add all options" onclick={acceptAllOptions} disabled={state.options.length >= 6}><span aria-hidden="true">Add all</span><Icon name="plus" size={16} /></button></div>
+                {#each state.suggestions.options as option}<div class="suggestion-row"><span dir="auto">{option}</span><button class="small-button" disabled={state.options.length >= 6} onclick={() => acceptOption(option)}>Add</button><button class="icon-button" aria-label={`Dismiss ${option}`} onclick={() => dismiss('options', option)}><Icon name="close" size={16} /></button></div>{/each}
+              </div>
+            {/if}
+            <button class="text-button section-add" onclick={addManualOption} disabled={state.options.length >= 6}><Icon name="plus" size={16} />Add option</button>
           </section>
 
           <section aria-label="What matters to you">
-            <div class="section-header"><div><div class="section-label"><span class="section-number">03</span> WHAT MATTERS</div><h2>Make it personal <span class="count">{state.pairs.length} / 30</span></h2></div><button class="text-button" onclick={addManualPair} disabled={state.pairs.length >= 30}><Icon name="plus" size={16} />Add pair</button></div>
+            <div class="section-header"><div><div class="section-label"><span class="section-number">03</span> WHAT MATTERS</div><h2>Make it personal <span class="count">{state.pairs.length} / 30</span></h2></div></div>
             <p class="section-description">Two sides of an experience. Keep the pairs that feel relevant.</p>
             <div class="pair-list">
               {#each state.pairs as pair, index (pair.id)}
@@ -183,17 +193,15 @@
                 </article>
               {:else}<div class="empty-state pair-empty"><span class="empty-symbol">↔</span><p>What pulls you in? What holds you back?<br /><span>Your first pair starts here.</span></p></div>{/each}
             </div>
+            {#if state.suggestions.pairs.length}
+              <div class="suggestions suggestions-inline" aria-label="Pair suggestions">
+                <div class="section-header"><div><div class="eyebrow"><Icon name="spark" size={14} /> KEEP WHAT FEELS RIGHT</div><h3>Pairs</h3></div><button class="text-button" aria-label="Add all pairs" onclick={acceptAllPairs} disabled={state.pairs.length >= 30}><span aria-hidden="true">Add all</span><Icon name="plus" size={16} /></button></div>
+                {#each state.suggestions.pairs as pair}<div class="suggestion-row"><span class="suggested-pair" dir="auto">{pair.negativeLabel}<span class="muted"> ↔ </span>{pair.positiveLabel}</span><button class="small-button" disabled={state.pairs.length >= 30} onclick={() => acceptPair(pair)}>Add</button><button class="icon-button" aria-label={`Dismiss ${pair.negativeLabel}`} onclick={() => dismiss('pairs', pair)}><Icon name="close" size={16} /></button></div>{/each}
+              </div>
+            {/if}
+            <button class="text-button section-add" onclick={addManualPair} disabled={state.pairs.length >= 30}><Icon name="plus" size={16} />Add pair</button>
           </section>
 
-          {#if suggestionCount}
-            <section class="suggestions" aria-label="Suggestions">
-              <div class="section-header"><div><div class="eyebrow"><Icon name="spark" size={14} /> A FEW POSSIBILITIES</div><h2>Keep what feels right</h2></div><button class="text-button" onclick={acceptAll} disabled={state.options.length >= 6 && state.pairs.length >= 30}>Add all <Icon name="plus" size={16} /></button></div>
-              {#if state.suggestions.options.length}<h3 class="suggestion-type">OPTIONS</h3>{/if}
-              {#each state.suggestions.options as option}<div class="suggestion-row"><span dir="auto">{option}</span><button class="small-button" disabled={state.options.length >= 6} onclick={() => acceptOption(option)}>Add</button><button class="icon-button" aria-label={`Dismiss ${option}`} onclick={() => dismiss('options', option)}><Icon name="close" size={16} /></button></div>{/each}
-              {#if state.suggestions.pairs.length}<h3 class="suggestion-type">PAIRS</h3>{/if}
-              {#each state.suggestions.pairs as pair}<div class="suggestion-row"><span class="suggested-pair" dir="auto">{pair.negativeLabel}<span class="muted"> ↔ </span>{pair.positiveLabel}</span><button class="small-button" disabled={state.pairs.length >= 30} onclick={() => acceptPair(pair)}>Add</button><button class="icon-button" aria-label={`Dismiss ${pair.negativeLabel}`} onclick={() => dismiss('pairs', pair)}><Icon name="close" size={16} /></button></div>{/each}
-            </section>
-          {/if}
           {#if state.options.length || state.pairs.length}<button class="text-button more-button" disabled={busy || !state.description.trim() || (state.options.length >= 6 && state.pairs.length >= 30)} onclick={() => suggest('more')}><Icon name="spark" size={16} />{busy ? 'Thinking…' : 'Suggest more'}</button>{/if}
           <div class="continue-bar"><p>{ready ? 'Everything is yours to adjust along the way.' : 'Add at least 2 named options and 1 complete pair.'}</p><button class="button primary" disabled={!ready} onclick={() => setStep('evaluate')}>Weigh my options <Icon name="arrow" /></button></div>
         </div>

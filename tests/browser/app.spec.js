@@ -35,7 +35,7 @@ test('manual decision, importance, independent joysticks, podium, restore, and r
   await expect(page.getByRole('region', { name: 'Place 2', exact: true })).toBeVisible();
   await expect(page.getByRole('region', { name: 'Place 3', exact: true })).toBeVisible();
   await page.getByText('Explore the numbers', { exact: true }).click();
-  await expect(page.getByRole('table')).toContainText('0.00%');
+  await expect(page.getByRole('table')).toContainText('50.00%');
   await expect(page.getByRole('table')).toContainText('—');
   await page.getByRole('button', { name: 'Revisit your ratings' }).click();
   await expect(page.getByRole('slider', { name: 'Importance of this pair' })).toHaveValue('80');
@@ -50,13 +50,33 @@ test('manual decision, importance, independent joysticks, podium, restore, and r
   expect(errors).toEqual([]);
 });
 
+test('table columns and podium stay between zero and one hundred after a nonuniform assessment', async ({ page }) => {
+  await manualDecision(page);
+  await page.getByRole('button', { name: 'Weigh my options' }).click();
+  await page.getByRole('button', { name: 'Move preference for Tension', exact: true }).focus();
+  await page.keyboard.press('ArrowUp');
+  await page.getByRole('button', { name: 'Calculate', exact: true }).click();
+  await expect(page.getByRole('region', { name: 'Place 1', exact: true }).locator('.score')).toHaveText('100%');
+  await expect(page.getByRole('region', { name: 'Place 2', exact: true }).locator('.score')).toHaveText('0%');
+  await expect(page.locator('.flame')).toHaveCount(0);
+  await page.getByText('Explore the numbers', { exact: true }).click();
+  const values = await page.getByRole('table').locator('td').allTextContents();
+  for (const value of values.filter(value => value !== '—')) {
+    expect(parseFloat(value)).toBeGreaterThanOrEqual(0);
+    expect(parseFloat(value)).toBeLessThanOrEqual(100);
+  }
+  await expect(page.getByRole('table')).toContainText('100.00%');
+  await expect(page.getByRole('table')).toContainText('0.00%');
+});
+
 test('demo suggestions in user language require acceptance and preserve edits', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('textbox', { name: 'Describe your decision' }).fill('Я хочу переехать в другой город и сравнить варианты.');
   await page.getByRole('button', { name: 'Explore with AI' }).click();
   await expect(page.getByRole('region', { name: 'Suggestions', exact: true })).toContainText('Душевное напряжение');
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveCount(0);
-  await page.getByRole('button', { name: 'Add all', exact: true }).click();
+  await page.getByRole('button', { name: 'Add all options', exact: true }).click();
+  await page.getByRole('button', { name: 'Add all pairs', exact: true }).click();
   await expect(page.getByRole('textbox', { name: 'Option 1', exact: true })).toHaveValue('Остаться на месте');
   await page.getByRole('textbox', { name: 'Option 1', exact: true }).fill('My own option');
   await page.getByRole('button', { name: 'Weigh my options' }).click();
