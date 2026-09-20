@@ -10,12 +10,31 @@
   import { calculateDecision } from './lib/core.js';
   import { createState, loadState, saveState, touch, addOption, addPair, removeOption, removePair, canCalculate, mergeSuggestions, addMentionedOptions, key, pairKey } from './lib/state.js';
 
+  const welcomeReassurances = [
+    'I’ll help you compare the options that are hardest to compare.',
+    'Let’s make sense of a choice between very different possibilities.',
+    'I’ll help you find clarity when no option is easy to compare.',
+    'Let’s explore the differences between the options you can’t choose between.',
+    'I’ll help you weigh possibilities that don’t fit the same scale.',
+    'Let’s bring structure to a choice between very different paths.',
+    'I’ll help you compare what feels impossible to compare.',
+    'Let’s understand what pulls you toward each possible path.',
+    'I’ll help you decide when every option matters in a different way.',
+    'Let’s find your perspective when the options seem impossible to compare.'
+  ];
+  const eyebrowCopy = 'BIG DECISIONS. YOUR OWN PERSPECTIVE.';
+  const headingCopy = 'A little clarity.';
+  const headingEmCopy = 'A way forward.';
+
   let storage;
   try { storage = window.localStorage; } catch { storage = null; }
   let state = $state(loadState(storage));
   let provider = $state('demo');
   let busy = $state(false);
   let aiContextReady = $state(false);
+  let typedEyebrow = $state('');
+  let typedHeading = $state('');
+  let typedHeadingEm = $state('');
   let reply = $state('');
   let gazeX = $state(0);
   let gazeY = $state(0);
@@ -30,6 +49,22 @@
   const results = $derived(state.currentStep === 'results' && ready ? calculateDecision(state) : []);
   const suggestionCount = $derived(state.suggestions.options.length + state.suggestions.pairs.length);
 
+  const wait = milliseconds => new Promise(resolve => setTimeout(resolve, milliseconds));
+  async function typeCopy(copy, setter) {
+    let value = '';
+    for (const character of copy) {
+      if (character !== ' ' && Math.random() < 0.07) {
+        const typo = String.fromCharCode(97 + Math.floor(Math.random() * 26));
+        value += typo; setter(value);
+        await wait(70 + Math.random() * 110);
+        value = value.slice(0, -1); setter(value);
+        await wait(35 + Math.random() * 75);
+      }
+      value += character; setter(value);
+      await wait(28 + Math.random() * 135);
+    }
+  }
+
   $effect(() => { saveAvailable = saveState(storage, state); });
   onMount(() => {
     fetch('/api/config').then(r => r.json()).then(config => { provider = config.provider; }).catch(() => {});
@@ -38,6 +73,9 @@
       gazeY = Math.max(-2, Math.min(2, (event.clientY / window.innerHeight - 0.42) * 4));
     };
     window.addEventListener('pointermove', trackGaze, { passive: true });
+    void typeCopy(eyebrowCopy, value => { typedEyebrow = value; });
+    void typeCopy(headingCopy, value => { typedHeading = value; });
+    void typeCopy(headingEmCopy, value => { typedHeadingEm = value; });
     return () => { controller?.abort(); clearTimeout(extractionTimer); window.removeEventListener('pointermove', trackGaze); };
   });
 
@@ -182,7 +220,7 @@
 
   <main>
     {#if state.currentStep === 'prepare'}
-      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> BIG DECISIONS. YOUR OWN PERSPECTIVE.</div><h1>A little clarity.<br /><em>A way forward.</em></h1></div><div class="page-heading-copy">{#if state.preparePage !== 'mind'}<button class="text-button" onclick={() => setPreparePage('mind')}><Icon name="back" size={16} />Back to What’s on your mind</button>{/if}<p>Start with AI in <em>What’s on your mind?</em><br class="desktop" /> Then lay out your options and make room for what matters.</p></div></div>
+      <div class="page-heading"><div><div class="eyebrow"><span class="tiny-dot"></span> {typedEyebrow}</div><h1>{typedHeading}<br /><em>{typedHeadingEm}</em></h1></div><div class="page-heading-copy">{#if state.preparePage !== 'mind'}<button class="text-button" onclick={() => setPreparePage('mind')}><Icon name="back" size={16} />Back to What’s on your mind</button>{/if}<p>Start with AI in <em>What’s on your mind?</em><br class="desktop" /> Then lay out your options and make room for what matters.</p></div></div>
 
       <div class="prepare-layout prepare-{state.preparePage}">
         {#if state.preparePage === 'mind'}
@@ -209,7 +247,7 @@
         {/if}
         <aside class:situation-hidden={state.preparePage !== 'mind'} class="situation-panel">
           <div class="section-label"><span class="section-number">01</span> THE DECISION</div>
-          <h2>What’s on your mind?</h2><p class="welcome-reassurance">I’ll help you take this one step at a time.</p><p class="muted">Describe the area of life, the decision you’re facing, and the options you’re considering.</p>
+          <h2>What’s on your mind?</h2><p class="welcome-reassurance" aria-live="polite">{#each welcomeReassurances as reassurance, index}<span style={`--reassurance-index:${index}`}>{reassurance}</span>{/each}</p><p class="muted">Describe the area of life, the decision you’re facing, and the options you’re considering.</p>
           <label class="sr-only" for="description">Describe your decision</label>
           <textarea id="description" maxlength="6000" rows="6" placeholder="I’m trying to decide whether to…" value={state.description} oninput={descriptionChanged} onblur={descriptionBlurred}></textarea>
           <p class="description-hint">Options you mention appear in your list automatically.</p>

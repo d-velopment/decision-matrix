@@ -10,9 +10,11 @@
 <section class="results-view">
   <div class="center-heading">
     <Guide compact message="You’ve made the decision yours. Now see what rises to the top." />
-    <div class="eyebrow"><span class="tiny-dot"></span> YOUR PERSPECTIVE, MADE CLEAR</div>
-    <h1>{hasOptions ? 'Your way forward.' : 'No options'}</h1>
-    <p>{hasOptions ? 'Here’s how your options line up with what matters to you.' : 'Add options and ratings to see your results.'}</p>
+    <div class="center-heading-copy">
+      <div class="eyebrow"><span class="tiny-dot"></span> YOUR PERSPECTIVE, MADE CLEAR</div>
+      <h1>{hasOptions ? 'Your way forward.' : 'No options'}</h1>
+      <p>{hasOptions ? 'Here’s how your options line up with what matters to you.' : 'Add options and ratings to see your results.'}</p>
+    </div>
   </div>
   <div class="podium" aria-label="Decision podium">
     {#each [ranks[1], ranks[0], ranks[2]] as rank (rank.place)}
