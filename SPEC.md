@@ -226,7 +226,7 @@ Derived metrics include both display availability and an effective numeric value
 
 ### A. Legacy Excel parity
 
-Source: `diagram_worcestershire 2023.xlsx`, sheets `Решение` and `Ответы`.
+Source: `scripts/diagram_worcestershire.xlsx`, sheets `Решение` and `Ответы`.
 
 Create a dedicated reference fixture from the source values and formulas. This test path bypasses new input flooring and normalization and verifies the original calculation engine directly. Compare every metric for all four options against independently recomputed Excel formulas and cached outputs, allowing for precision in cached values.
 

@@ -39,7 +39,7 @@ Explained that app-management permission is unnecessary for this project; no com
 
 Read SPEC.md and this file, inspect git status and existing files, then run npm test.
 Do not repeat paid requests or overwrite surviving user changes.
-The source workbook is /Users/hello/Downloads/diagram_worcestershire 2023.xlsx.
+The source workbook is scripts/diagram_worcestershire.xlsx.
 
 In the current sandbox, starting a local HTTP server and launching headless Chrome require escalated execution. npm installation also required network permission. Those commands succeeded after escalation.
 Browser test command on this Mac:

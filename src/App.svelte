@@ -468,24 +468,24 @@
       <div class="prepare-layout prepare-{state.preparePage}">
         {#if state.preparePage === 'mind'}
           <div class="welcome-layers" aria-hidden="true">
-            <img class="welcome-layer layer-background" src="/guide/layers/background.png" alt="" />
-            <img class="welcome-layer layer-character" src="/guide/layers/character.png" alt="" />
-            <img class="welcome-layer layer-table" src="/guide/layers/table.png" alt="" />
-            <img class="welcome-layer layer-books-right" src="/guide/layers/books-right.png" alt="" />
+            <img class="welcome-layer layer-background" src="/guide/layers/background.webp" alt="" />
+            <img class="welcome-layer layer-character" src="/guide/layers/character.webp" alt="" />
+            <img class="welcome-layer layer-table" src="/guide/layers/table.webp" alt="" />
+            <img class="welcome-layer layer-books-right" src="/guide/layers/books-right.webp" alt="" />
           </div>
           <p class="scene-slogan scene-slogan-top">Thoughtful<br />choices for<br />a more you.</p>
           <p class="scene-slogan scene-slogan-bottom">A clearer<br />tomorrow<br />starts with a<br />calm today.</p>
         {/if}
         {#if state.preparePage === 'options'}
           <div class="options-illustration" aria-hidden="true">
-            <img class="options-layer options-table" src="/guide/layers/table.png" alt="" />
-            <img class="options-layer options-character" src="/guide/layers/character-options.png" alt="" />
+            <img class="options-layer options-table" src="/guide/layers/table.webp" alt="" />
+            <img class="options-layer options-character" src="/guide/layers/character-options.webp" alt="" />
           </div>
         {/if}
         {#if state.preparePage === 'criteria'}
           <div class="options-illustration criteria-illustration" aria-hidden="true">
-            <img class="options-layer options-table" src="/guide/layers/table.png" alt="" />
-            <img class="options-layer options-character" src="/guide/layers/character-criteria.png" alt="" />
+            <img class="options-layer options-table" src="/guide/layers/table.webp" alt="" />
+            <img class="options-layer options-character" src="/guide/layers/character-criteria.webp" alt="" />
           </div>
         {/if}
         <aside class:situation-hidden={state.preparePage !== 'mind'} class="situation-panel">
@@ -767,25 +767,25 @@
           <p class="muted">Move each center toward the options you associate with that feeling.</p>
         </div>
         <div class="evaluation-portrait" aria-label="Your perspective changes with importance">
-          <img class="evaluation-character" src="/guide/layers/evaluation-character-base.png" alt="" /><img
+          <img class="evaluation-character" src="/guide/layers/evaluation-character-base.webp" alt="" /><img
             class="evaluation-feature evaluation-nose"
-            src="/guide/layers/evaluation-nose.png"
+            src="/guide/layers/evaluation-nose.webp"
             alt=""
           />
           <div class="evaluation-face-overlay">
             <img
               class="evaluation-feature evaluation-eye-lids"
-              src="/guide/layers/evaluation-eye-lids.png"
+              src="/guide/layers/evaluation-eye-lids.webp"
               alt=""
             /><img
               class="evaluation-feature evaluation-brows"
               style={facePartStyle('brows')}
-              src="/guide/layers/evaluation-brows.png"
+              src="/guide/layers/evaluation-brows.webp"
               alt=""
             /><img
               class="evaluation-feature evaluation-mouth"
               style={facePartStyle('mouth')}
-              src="/guide/layers/evaluation-mouth.png"
+              src="/guide/layers/evaluation-mouth.webp"
               alt=""
             />
             <div class="portrait-gaze" style={`--gaze-x:${gazeX}px;--gaze-y:${gazeY}px`} aria-hidden="true">

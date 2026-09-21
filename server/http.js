@@ -13,6 +13,7 @@ const MIME_TYPES = {
   '.css': 'text/css',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
+  '.webp': 'image/webp',
 };
 
 /** Send a cache-free JSON response with the supplied HTTP status. */
@@ -63,7 +64,7 @@ function isPermittedAsset(assetPath) {
     assetPath === 'index.html' ||
     assetPath === 'favicon.svg' ||
     /^assets\/[a-zA-Z0-9_.-]+$/.test(assetPath) ||
-    /^guide\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)?\.png$/.test(assetPath)
+    /^guide\/[a-zA-Z0-9_.-]+(?:\/[a-zA-Z0-9_.-]+)?\.(?:png|webp)$/.test(assetPath)
   );
 }
 

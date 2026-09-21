@@ -80,7 +80,7 @@ Browser tests build the app and start a separate demo server on port 3100. Tests
 The regression fixture is `tests/fixtures/excel.json`. It contains the supplied workbook's sample inputs and cached outputs. Do not treat those sample data as a new user's answers. To regenerate it, install Python's openpyxl separately and run:
 
 ```sh
-python3 scripts/extract_excel.py "/path/to/diagram_worcestershire 2023.xlsx"
+python3 scripts/extract_excel.py "scripts/diagram_worcestershire.xlsx"
 ```
 
 ## Structure

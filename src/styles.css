@@ -2016,7 +2016,7 @@ tbody th {
   border-bottom: 0;
   border-radius: 16px 16px 0 0;
   isolation: isolate;
-  background: #f7f4ec url('/guide/welcome-scene.png') center center/cover no-repeat;
+  background: #f7f4ec;
   padding: 45px 0 70px;
 }
 

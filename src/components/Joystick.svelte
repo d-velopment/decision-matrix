@@ -82,9 +82,6 @@
   }
 </script>
 
-/** * Interactive radial control for positioning options around a negative or * positive experience. * * Imported by:
-App.svelte on the Weigh it up page. * Reports pointer and keyboard changes through onmove and onrotate props. */
-
 <div class="radial-control {tone}" class:dragging={dragging !== null}>
   <p class="radial-instruction">Move the center toward an option.</p>
   <div class="radial-stage" bind:this={stage}>

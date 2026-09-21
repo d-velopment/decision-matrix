@@ -1,5 +1,5 @@
 {
-  "source": "diagram_worcestershire 2023.xlsx",
+  "source": "scripts/diagram_worcestershire.xlsx",
   "options": ["Москва", "Йыхви", "Таллин", "Лондон"],
   "pairs": [
     {

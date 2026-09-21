@@ -11,7 +11,7 @@
 </script>
 
 <aside class:compact class="guide-card" aria-label="Your guide">
-  <img src="/guide/companion.png" alt="" />
+  <img src="/guide/companion.webp" alt="" />
   <div class="guide-copy">
     <span class="guide-label">YOUR GUIDE</span>
     <p>{message}</p>
