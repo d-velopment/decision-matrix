@@ -4,53 +4,276 @@
   color: #7a846f;
   margin: -3px 0 14px;
 }
-.pair-card .pair-labels { margin-bottom: 2px; }
-.association-column { padding: 26px 16px 18px; }
-.association-column > .pole-label, .association-column > h3 { margin-left: 12px; margin-right: 12px; }
-.association-column > h3 { margin-bottom: 8px; min-height: 40px; }
-.association-column.negative { background: linear-gradient(180deg, #fdf8f5, #fff 90%); }
-.association-column.positive { background: linear-gradient(180deg, #f7faef, #fff 90%); }
-.radial-control { --radial: #66834c; --radial-soft: #dce8c6; --radial-border: #c7d9b0; --radial-wash: #eff5e5; }
-.radial-control.negative { --radial: #ae7868; --radial-soft: #efd9d0; --radial-border: #dec2b6; --radial-wash: #f9efea; }
-.radial-instruction { text-align: center; font-size: 10px; color: #8a927f; padding: 4px 4px 0; }
-.radial-stage { position: relative; width: 100%; max-width: 420px; aspect-ratio: 1; margin: 3px auto; }
-.radial-guide { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.radial-wash { fill: var(--radial-wash); stroke: var(--radial-border); stroke-width: 1.5; stroke-dasharray: 3 4; }
-.radial-inner { fill: none; stroke: var(--radial-border); stroke-width: 1; opacity: .45; }
-.radial-cross { fill: none; stroke: var(--radial-border); stroke-width: 1; opacity: .4; }
-.radial-thread { stroke: var(--radial); stroke-width: 1; opacity: .19; }
-.radial-origin { fill: var(--radial); opacity: .3; }
-.radial-option, .radial-puck { position: absolute; transform: translate(-50%, -50%); touch-action: none; user-select: none; -webkit-user-select: none; cursor: grab; }
+
+.pair-card .pair-labels {
+  margin-bottom: 2px;
+}
+
+.association-column {
+  padding: 26px 16px 18px;
+}
+
+.association-column > .pole-label,
+.association-column > h3 {
+  margin-left: 12px;
+  margin-right: 12px;
+}
+
+.association-column > h3 {
+  margin-bottom: 8px;
+  min-height: 40px;
+}
+
+.association-column.negative {
+  background: linear-gradient(180deg, #fdf8f5, #fff 90%);
+}
+
+.association-column.positive {
+  background: linear-gradient(180deg, #f7faef, #fff 90%);
+}
+
+.radial-control {
+  --radial: #66834c;
+  --radial-soft: #dce8c6;
+  --radial-border: #c7d9b0;
+  --radial-wash: #eff5e5;
+}
+
+.radial-control.negative {
+  --radial: #ae7868;
+  --radial-soft: #efd9d0;
+  --radial-border: #dec2b6;
+  --radial-wash: #f9efea;
+}
+
+.radial-instruction {
+  text-align: center;
+  font-size: 10px;
+  color: #8a927f;
+  padding: 4px 4px 0;
+}
+
+.radial-stage {
+  position: relative;
+  width: 100%;
+  max-width: 420px;
+  aspect-ratio: 1;
+  margin: 3px auto;
+}
+
+.radial-guide {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+}
+
+.radial-wash {
+  fill: var(--radial-wash);
+  stroke: var(--radial-border);
+  stroke-width: 1.5;
+  stroke-dasharray: 3 4;
+}
+
+.radial-inner {
+  fill: none;
+  stroke: var(--radial-border);
+  stroke-width: 1;
+  opacity: 0.45;
+}
+
+.radial-cross {
+  fill: none;
+  stroke: var(--radial-border);
+  stroke-width: 1;
+  opacity: 0.4;
+}
+
+.radial-thread {
+  stroke: var(--radial);
+  stroke-width: 1;
+  opacity: 0.19;
+}
+
+.radial-origin {
+  fill: var(--radial);
+  opacity: 0.3;
+}
+
+.radial-option,
+.radial-puck {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+}
+
 .radial-option {
-  width: 28%; min-height: 52px; padding: 7px 9px 9px; border: 1px solid var(--radial-border);
-  border-radius: 9px; background: #fffefc; box-shadow: 0 3px 8px #24301d08; z-index: 2;
-  text-align: left; transition: box-shadow .15s, background .15s;
+  width: 28%;
+  min-height: 52px;
+  padding: 7px 9px 9px;
+  border: 1px solid var(--radial-border);
+  border-radius: 9px;
+  background: #fffefc;
+  box-shadow: 0 3px 8px #24301d08;
+  z-index: 2;
+  text-align: left;
+  transition:
+    box-shadow 0.15s,
+    background 0.15s;
 }
-.radial-option-top { display: flex; align-items: center; justify-content: space-between; color: var(--radial); font-size: 8px; font-weight: 600; margin-bottom: 4px; }
-.drag-grip { font-size: 16px; line-height: .8; color: var(--radial); opacity: .7; }
-.radial-option-label { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; overflow-wrap: anywhere; font-size: 11px; line-height: 1.35; }
-.radial-option.nearest { background: var(--radial-wash); border-color: var(--radial); box-shadow: 0 0 0 2px var(--radial-soft); }
-.radial-option:hover { box-shadow: 0 3px 10px #24301d16; }
-.radial-option.held, .radial-puck.held { cursor: grabbing; z-index: 5; }
-.radial-puck { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border-radius: 50%; border: 4px solid #fff; color: #fff; background: var(--radial); box-shadow: 0 0 0 1px var(--radial-border), 0 4px 16px #293a232b; z-index: 3; }
-.radial-option:focus-visible, .radial-puck:focus-visible { outline-color: var(--radial); }
-.radial-caption { display: flex; align-items: flex-start; justify-content: center; gap: 6px; text-align: center; color: #7d8971; font-size: 10px; line-height: 1.6; }
-.radial-caption .drag-grip { margin-top: 3px; }
-.keyboard-hint { font-size: 9px; color: #a0a894; }
-.radial-status { display: flex; align-items: center; justify-content: space-between; gap: 10px; border-top: 1px solid #e7eadf; margin: 16px 12px 0; padding-top: 7px; }
-.radial-status > span { font-size: 9px; color: #8e9980; overflow-wrap: anywhere; }
-.radial-status .text-button { font-size: 10px; }
+
+.radial-option-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  color: var(--radial);
+  font-size: 8px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.drag-grip {
+  font-size: 16px;
+  line-height: 0.8;
+  color: var(--radial);
+  opacity: 0.7;
+}
+
+.radial-option-label {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.radial-option.nearest {
+  background: var(--radial-wash);
+  border-color: var(--radial);
+  box-shadow: 0 0 0 2px var(--radial-soft);
+}
+
+.radial-option:hover {
+  box-shadow: 0 3px 10px #24301d16;
+}
+
+.radial-option.held,
+.radial-puck.held {
+  cursor: grabbing;
+  z-index: 5;
+}
+
+.radial-puck {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  color: #fff;
+  background: var(--radial);
+  box-shadow:
+    0 0 0 1px var(--radial-border),
+    0 4px 16px #293a232b;
+  z-index: 3;
+}
+
+.radial-option:focus-visible,
+.radial-puck:focus-visible {
+  outline-color: var(--radial);
+}
+
+.radial-caption {
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 6px;
+  text-align: center;
+  color: #7d8971;
+  font-size: 10px;
+  line-height: 1.6;
+}
+
+.radial-caption .drag-grip {
+  margin-top: 3px;
+}
+
+.keyboard-hint {
+  font-size: 9px;
+  color: #a0a894;
+}
+
+.radial-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  border-top: 1px solid #e7eadf;
+  margin: 16px 12px 0;
+  padding-top: 7px;
+}
+
+.radial-status > span {
+  font-size: 9px;
+  color: #8e9980;
+  overflow-wrap: anywhere;
+}
+
+.radial-status .text-button {
+  font-size: 10px;
+}
+
 @media (max-width: 1000px) and (min-width: 741px) {
-  .association-column { padding-inline: 10px; }
-  .radial-option { width: 30%; padding: 5px 6px; }
-  .radial-option-label { font-size: 9px; }
-  .radial-puck { width: 38px; height: 38px; }
+  .association-column {
+    padding-inline: 10px;
+  }
+
+  .radial-option {
+    width: 30%;
+    padding: 5px 6px;
+  }
+
+  .radial-option-label {
+    font-size: 9px;
+  }
+
+  .radial-puck {
+    width: 38px;
+    height: 38px;
+  }
 }
+
 @media (max-width: 740px) {
-  .association-column { padding: 25px 12px 18px; }
-  .association-column > h3 { min-height: 0; }
-  .radial-instruction { margin-top: 12px; }
-  .radial-option { min-height: 55px; }
-  .radial-puck { width: 46px; height: 46px; }
-  .keyboard-hint { display: none; }
+  .association-column {
+    padding: 25px 12px 18px;
+  }
+
+  .association-column > h3 {
+    min-height: 0;
+  }
+
+  .radial-instruction {
+    margin-top: 12px;
+  }
+
+  .radial-option {
+    min-height: 55px;
+  }
+
+  .radial-puck {
+    width: 46px;
+    height: 46px;
+  }
+
+  .keyboard-hint {
+    display: none;
+  }
 }

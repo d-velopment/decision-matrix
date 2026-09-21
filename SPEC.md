@@ -233,11 +233,11 @@ Create a dedicated reference fixture from the source values and formulas. This t
 Known reference Result values:
 
 | Option | Numeric Result | Percentage display |
-| --- | ---: | ---: |
-| Москва | 0.04993333333 | 4.99% |
-| Йыхви | 0.6221925926 | 62.22% |
-| Таллин | -0.02454044444 | -2.45% |
-| Лондон | -0.04155555556 | -4.16% |
+| ------ | -------------: | -----------------: |
+| Москва |  0.04993333333 |              4.99% |
+| Йыхви  |   0.6221925926 |             62.22% |
+| Таллин | -0.02454044444 |             -2.45% |
+| Лондон | -0.04155555556 |             -4.16% |
 
 Reference weighted contribution totals are 1.05, 8.3, -0.85, and -8.5 respectively; Balance divides those by 15.
 

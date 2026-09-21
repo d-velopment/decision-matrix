@@ -1,6 +1,7 @@
 # Implementation progress
 
 ## Current state
+
 - Current revision: sketch-led multi-page flow with a guide character, automatic option extraction, and radial controls. Options, Personal criteria, Weigh it up, and Results are separate pages; the importance slider stays on the evaluation screen above two separate red/green joysticks. Preparation has no sliders; new pair importance is 50.
 - Implemented radial geometry, dragging labels, keyboard/touch interaction, non-destructive old-state migration, and duplicate/deletion/rename protection for auto-extracted options.
 - Latest change: final metric columns and podium now use independent outward-rounded bounds. Each column expands its minimum downward and maximum upward to whole 100-percentage-point steps, then maps into 0–100%; constant finite columns show 50%; undefined values stay dashes. Raw Excel formulas remain intact.
@@ -14,6 +15,7 @@
 - All files are saved. No commits or deployment have been made.
 
 ## Plan
+
 1. Done: extract the 15-pair Excel fixture and verify all 28 metrics.
 2. Done: hidden normalization, zero fallbacks, ranking, state, and localStorage.
 3. Done: preparation, evaluation with importance and radial controls, normalized podium/table, and reset dialog.
@@ -22,16 +24,19 @@
 6. Done: desktop setup/evaluation and mobile evaluation/results visually inspected. Corrected spacing between pair labels and rebuilt successfully without compiler warnings. Mobile content fits a 390px viewport.
 
 ## Remaining work / practical limitations
+
 - No required implementation steps remain for this local demo MVP.
 - Real OpenAI behavior needs the user's API key and a separately authorized live test; all testing so far used demo/mocked responses.
 - To enable live suggestions, follow README.md and edit .env locally; do not paste secrets into chat.
 - Nothing is deployed publicly. Public hosting/access control is outside this MVP.
 
 ## OS permission question (resolved)
+
 The user reported: “ChatGPT” will not be able to update or delete other applications until it is quit.
 Explained that app-management permission is unnecessary for this project; no computer reboot is needed and they can defer quitting ChatGPT. Do not modify or delete other applications.
 
 ## Resume instructions
+
 Read SPEC.md and this file, inspect git status and existing files, then run npm test.
 Do not repeat paid requests or overwrite surviving user changes.
 The source workbook is /Users/hello/Downloads/diagram_worcestershire 2023.xlsx.

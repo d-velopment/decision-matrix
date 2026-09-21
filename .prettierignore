@@ -1,0 +1,7 @@
+node_modules
+dist
+coverage
+.git
+.codex
+.agents
+public/guide/layers
